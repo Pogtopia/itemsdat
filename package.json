@@ -9,7 +9,7 @@
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "intall": "tsc --project tsconfig.s"
+    "install": "tsc --project tsconfig.s"
   },
   "author": "Alexander9673",
   "license": "MIT",

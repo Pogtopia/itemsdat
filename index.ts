@@ -84,7 +84,7 @@ const decodeStr = (id, length, file, pos, encoded = false) => {
   }
 };
 
-const decode = (data) => {
+const decode = (data: Buffer) => {
   const meta: ItemsDatMeta = {
     items: [],
   };
