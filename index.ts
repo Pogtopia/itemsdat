@@ -55,7 +55,7 @@ export interface ItemDefinition {
   extraOptions2?: string;
   punchOptions?: string;
 
-  unknownOptions?: string;
+  unknownOptions?: Buffer;
 }
 
 export interface ItemsDatMeta {
