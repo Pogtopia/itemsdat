@@ -265,6 +265,8 @@ const decode = (data: Buffer) => {
 
       item.punchOptions = decodeStr(item.id, punchOptionsLength, data, mempos);
       mempos += punchOptionsLength;
+
+      if (meta.version >= 12) mempos += 13;
     }
 
     meta.items.push(item);
