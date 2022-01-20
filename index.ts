@@ -85,8 +85,6 @@ const decodeStr = (id, length, file, pos, encoded = false) => {
 };
 
 const decode = (data: Buffer) => {
-  console.log('decoding items.dat...');
-  
   const meta: ItemsDatMeta = {
     items: [],
   };
@@ -98,6 +96,8 @@ const decode = (data: Buffer) => {
 
   meta.itemCount = data.readUInt32LE(mempos);
   mempos += 4;
+
+  console.log('Decoding items.dat, version:' meta.version);
 
   for (let k = 0; k < meta.itemCount; k++) {
     const item: ItemDefinition = {};
@@ -270,6 +270,7 @@ const decode = (data: Buffer) => {
 
       if (meta.version >= 12) mempos += 13;
       if (meta.version >= 13) mempos += 4;
+      if (meta.version >= 14) mempos += 4;
     }
 
     meta.items.push(item);
