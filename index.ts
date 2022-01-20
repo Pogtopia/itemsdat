@@ -85,6 +85,8 @@ const decodeStr = (id, length, file, pos, encoded = false) => {
 };
 
 const decode = (data: Buffer) => {
+  console.log('decoding items.dat...');
+  
   const meta: ItemsDatMeta = {
     items: [],
   };
@@ -267,6 +269,7 @@ const decode = (data: Buffer) => {
       mempos += punchOptionsLength;
 
       if (meta.version >= 12) mempos += 13;
+      if (meta.version >= 13) mempos += 4;
     }
 
     meta.items.push(item);
