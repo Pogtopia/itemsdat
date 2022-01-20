@@ -97,7 +97,7 @@ const decode = (data: Buffer) => {
   meta.itemCount = data.readUInt32LE(mempos);
   mempos += 4;
 
-  console.log('Decoding items.dat, version:' meta.version);
+  console.log('Decoding items.dat, version:', meta.version);
 
   for (let k = 0; k < meta.itemCount; k++) {
     const item: ItemDefinition = {};
