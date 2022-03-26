@@ -239,6 +239,10 @@ class ItemsDat {
           await this.writeString(item.texture2, item.id)
           await this.writeString(item.extraOptions, item.id)
 
+          if (typeof item.extraBytes === 'object' &&
+            item.extraBytes?.type === 'Buffer')
+            item.extraBytes = Buffer.from(item.extraBytes?.data)
+
           if (Buffer.isBuffer(item.extraBytes))
             for (const byte of item.extraBytes)
               this.data[this.mempos++] = byte
@@ -249,6 +253,10 @@ class ItemsDat {
             if (meta.version >= 12) {
               this.data.writeInt32LE(item.flags4, this.mempos)
               this.mempos += 4;
+
+              if (typeof item.bodyPart === 'object' &&
+                item.bodyPart?.type === 'Buffer')
+                item.bodyPart = Buffer.from(item.bodyPart?.data)
 
               if (Buffer.isBuffer(item.bodyPart))
                 for (const byte of item.bodyPart)
