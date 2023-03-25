@@ -40,8 +40,7 @@ class ItemsDat {
    * @param items An array of items
    */
   private getWriteSize(items: ItemDefinition[]) {
-    let size = 167 * items.length
-
+    let size = 194 * items.length
     // get sizes for the string
     for (const item of items) {
       const keys = Object.keys(item)
@@ -273,6 +272,11 @@ class ItemsDat {
             }
 
             if (meta.version >= 14) this.mempos += 4;
+
+            if (meta.version >= 15) {
+              this.mempos += 25;
+              await this.writeString(item.extraTexture || "", item.id);
+            }
           }
         }
 
@@ -399,6 +403,11 @@ class ItemsDat {
             }
 
             if (meta.version >= 14) this.mempos += 4;
+            
+            if (meta.version >= 15) {
+              this.mempos += 25;
+              item.extraTexture = await this.readString({ id: item.id });
+            }
           }
 
           meta.items.push(item)
