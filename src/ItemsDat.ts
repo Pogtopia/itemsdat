@@ -1,34 +1,29 @@
-import {
-  ItemsDatMeta,
-  ItemDefinition,
-  StringOptions
-} from './Types'
-
+import { ItemsDatMeta, ItemDefinition, StringOptions } from "./Types";
 
 class ItemsDat {
   /**
    * The key used for the XOR encryption/decryption.
    */
-  public key: string = 'PBG892FXX982ABC*'
+  public key: string = "PBG892FXX982ABC*";
 
   /**
    * The current position of the reader/writer.
    */
-  private mempos: number = 0
+  private mempos: number = 0;
 
   private stringFields: string[] = [
-    'name',
-    'texture',
-    'extraFile',
-    'petName',
-    'petPrefix',
-    'petSuffix',
-    'petAbility',
-    'extraOptions',
-    'texture2',
-    'extraOptions2',
-    'punchOptions'
-  ]
+    "name",
+    "texture",
+    "extraFile",
+    "petName",
+    "petPrefix",
+    "petSuffix",
+    "petAbility",
+    "extraOptions",
+    "texture2",
+    "extraOptions2",
+    "punchOptions"
+  ];
 
   /**
    * @param data The data to encode/decode.
@@ -40,22 +35,20 @@ class ItemsDat {
    * @param items An array of items
    */
   private getWriteSize(items: ItemDefinition[]) {
-    let size = 167 * items.length
-
+    let size = 194 * items.length;
     // get sizes for the string
     for (const item of items) {
-      const keys = Object.keys(item)
+      const keys = Object.keys(item);
 
       for (const key of keys) {
-        if (this.stringFields.includes(key) &&
-        typeof item[key] === 'string') {
+        if (this.stringFields.includes(key) && typeof item[key] === "string") {
           // calc length
-          size += item[key].length + 2
+          size += item[key].length + 2;
         }
       }
     }
 
-    return size
+    return size;
   }
 
   /**
@@ -67,38 +60,28 @@ class ItemsDat {
       encoded: false
     }
   ): Promise<string> {
-    return new Promise(
-      (resolve) => {
-        const length = this.data.readInt16LE(this.mempos);
-        this.mempos += 2;
+    return new Promise((resolve) => {
+      const length = this.data.readInt16LE(this.mempos);
+      this.mempos += 2;
 
-        if (!opts.encoded)
-          return resolve(
-            this.data.toString(
-              'utf-8',
-              this.mempos,
-              this.mempos += length
-            )
-          )
-        else {
-          const chars = []
-      
-          for (let i = 0; i < length; i++) {
-            chars.push(
-              String.fromCharCode(
-                this.data[this.mempos] ^ this.key.charCodeAt((opts.id + i) % this.key.length)
-              )
-            )
+      if (!opts.encoded)
+        return resolve(this.data.toString("utf-8", this.mempos, (this.mempos += length)));
+      else {
+        const chars = [];
 
-            this.mempos++
-          }
-      
-          return resolve(
-            chars.join('')
-          )
+        for (let i = 0; i < length; i++) {
+          chars.push(
+            String.fromCharCode(
+              this.data[this.mempos] ^ this.key.charCodeAt((opts.id + i) % this.key.length)
+            )
+          );
+
+          this.mempos++;
         }
+
+        return resolve(chars.join(""));
       }
-    )
+    });
   }
 
   /**
@@ -107,40 +90,27 @@ class ItemsDat {
    * @param id The id of the item.
    * @param encoded Wether or not to XOR encrypt the stirng.
    */
-  public writeString(
-    str: string,
-    id: number,
-    encoded: boolean = false
-  ): Promise<undefined> {
-    return new Promise(
-      (resolve) => {
-        // write the str length first
-        this.data.writeUInt16LE(str.length, this.mempos)
-        this.mempos += 2
+  public writeString(str: string, id: number, encoded: boolean = false): Promise<undefined> {
+    return new Promise((resolve) => {
+      // write the str length first
+      this.data.writeUInt16LE(str.length, this.mempos);
+      this.mempos += 2;
 
-        if (!encoded) {
-          this.data.write(
-            str,
-            this.mempos,
-            'utf8'
-          )
+      if (!encoded) {
+        this.data.write(str, this.mempos, "utf8");
 
-          this.mempos += str.length
-        } else {
-          const chars = []
+        this.mempos += str.length;
+      } else {
+        const chars = [];
 
-          for (let i = 0; i < str.length; i++)
-            chars.push(
-              str.charCodeAt(i) ^ this.key.charCodeAt((i + id) % this.key.length)
-            )
+        for (let i = 0; i < str.length; i++)
+          chars.push(str.charCodeAt(i) ^ this.key.charCodeAt((i + id) % this.key.length));
 
-          for (const char of chars)
-            this.data[this.mempos++] = char
-        }
-
-        return resolve(undefined)
+        for (const char of chars) this.data[this.mempos++] = char;
       }
-    )
+
+      return resolve(undefined);
+    });
   }
 
   /**
@@ -148,138 +118,137 @@ class ItemsDat {
    * @param meta The item data to use.
    */
   public encode(meta: ItemsDatMeta): Promise<Buffer> {
-    return new Promise(
-      async (resolve) => {
-        if (this.mempos !== 0) this.mempos = 0 // this must be 0
+    return new Promise(async (resolve) => {
+      if (this.mempos !== 0) this.mempos = 0; // this must be 0
 
-        const size = this.getWriteSize(meta.items)
-        this.data = Buffer.alloc(size) // create new data
+      const size = this.getWriteSize(meta.items);
+      this.data = Buffer.alloc(size); // create new data
 
-        this.data.writeUInt16LE(meta.version, this.mempos)
-        this.mempos += 2
+      this.data.writeUInt16LE(meta.version, this.mempos);
+      this.mempos += 2;
 
-        this.data.writeUInt32LE(meta.items.length, this.mempos)
-        this.mempos += 4
+      this.data.writeUInt32LE(meta.items.length, this.mempos);
+      this.mempos += 4;
 
-        for (const item of meta.items) {
-          this.data.writeInt32LE(item.id, this.mempos)
-          this.mempos += 4;
+      for (const item of meta.items) {
+        this.data.writeInt32LE(item.id, this.mempos);
+        this.mempos += 4;
 
-          this.data.writeInt16LE(item.flags, this.mempos)
-          this.mempos += 2;
+        this.data[this.mempos++] = item.flags;
+        this.data[this.mempos++] = item.flagsCategory;
 
-          this.data[this.mempos++] = item.type
-          this.data[this.mempos++] = item.materialType
+        this.data[this.mempos++] = item.type;
+        this.data[this.mempos++] = item.materialType;
 
-          await this.writeString(item.name, item.id, true)
-          await this.writeString(item.texture, item.id)
+        await this.writeString(item.name, item.id, true);
+        await this.writeString(item.texture, item.id);
 
-          this.data.writeInt32LE(item.textureHash, this.mempos)
-          this.mempos += 4
+        this.data.writeInt32LE(item.textureHash, this.mempos);
+        this.mempos += 4;
 
-          this.data[this.mempos++] = item.visualEffectType
+        this.data[this.mempos++] = item.visualEffectType;
 
-          // flags2
-          this.data.writeInt32LE(item.flags2, this.mempos)
-          this.mempos += 4
+        // flags2
+        this.data.writeInt32LE(item.flags2, this.mempos);
+        this.mempos += 4;
 
-          this.data[this.mempos++] = item.textureX
-          this.data[this.mempos++] = item.textureY
-          this.data[this.mempos++] = item.storageType
-          this.data[this.mempos++] = item.isStripeyWallpaper
-          this.data[this.mempos++] = item.collisionType
-          this.data[this.mempos++] = item.breakHits * 6
+        this.data[this.mempos++] = item.textureX;
+        this.data[this.mempos++] = item.textureY;
+        this.data[this.mempos++] = item.storageType;
+        this.data[this.mempos++] = item.isStripeyWallpaper;
+        this.data[this.mempos++] = item.collisionType;
+        this.data[this.mempos++] = item.breakHits * 6;
 
-          this.data.writeInt32LE(item.resetStateAfter, this.mempos)
-          this.mempos += 4
+        this.data.writeInt32LE(item.resetStateAfter, this.mempos);
+        this.mempos += 4;
 
-          this.data[this.mempos++] = item.bodyPartType
+        this.data[this.mempos++] = item.bodyPartType;
 
-          this.data.writeInt16LE(item.rarity, this.mempos)
-          this.mempos += 2;
+        this.data.writeInt16LE(item.rarity, this.mempos);
+        this.mempos += 2;
 
-          this.data[this.mempos++] = item.maxAmount
-          await this.writeString(item.extraFile, item.id)
+        this.data[this.mempos++] = item.maxAmount;
+        await this.writeString(item.extraFile, item.id);
 
-          this.data.writeInt32LE(item.extraFileHash, this.mempos)
-          this.mempos += 4;
+        this.data.writeInt32LE(item.extraFileHash, this.mempos);
+        this.mempos += 4;
 
-          this.data.writeInt32LE(item.audioVolume, this.mempos)
-          this.mempos += 4;
+        this.data.writeInt32LE(item.audioVolume, this.mempos);
+        this.mempos += 4;
 
-          await this.writeString(item.petName, item.id)
-          await this.writeString(item.petPrefix, item.id)
-          await this.writeString(item.petSuffix, item.id)
-          await this.writeString(item.petAbility, item.id)
+        await this.writeString(item.petName, item.id);
+        await this.writeString(item.petPrefix, item.id);
+        await this.writeString(item.petSuffix, item.id);
+        await this.writeString(item.petAbility, item.id);
 
-          this.data[this.mempos++] = item.seedBase
-          this.data[this.mempos++] = item.seedOverlay
-          this.data[this.mempos++] = item.treeBase
-          this.data[this.mempos++] = item.treeLeaves
+        this.data[this.mempos++] = item.seedBase;
+        this.data[this.mempos++] = item.seedOverlay;
+        this.data[this.mempos++] = item.treeBase;
+        this.data[this.mempos++] = item.treeLeaves;
 
-          this.data.writeInt32LE(item.seedColor, this.mempos)
-          this.mempos += 4;
+        this.data.writeInt32LE(item.seedColor, this.mempos);
+        this.mempos += 4;
 
-          this.data.writeInt32LE(item.seedOverlayColor, this.mempos)
-          this.mempos += 4;
+        this.data.writeInt32LE(item.seedOverlayColor, this.mempos);
+        this.mempos += 4;
 
-          this.data.writeInt32LE(item.ingredient, this.mempos)
-          this.mempos += 4;
+        this.data.writeInt32LE(item.ingredient, this.mempos);
+        this.mempos += 4;
 
-          this.data.writeInt32LE(item.growTime, this.mempos)
-          this.mempos += 4;
+        this.data.writeInt32LE(item.growTime, this.mempos);
+        this.mempos += 4;
 
-          this.data.writeInt16LE(item.flags3, this.mempos)
-          this.mempos += 2;
+        this.data.writeInt16LE(item.flags3, this.mempos);
+        this.mempos += 2;
 
-          this.data.writeInt16LE(item.isRayman, this.mempos)
-          this.mempos += 2;
+        this.data.writeInt16LE(item.isRayman, this.mempos);
+        this.mempos += 2;
 
-          await this.writeString(item.extraOptions, item.id)
-          await this.writeString(item.texture2, item.id)
-          await this.writeString(item.extraOptions, item.id)
+        await this.writeString(item.extraOptions, item.id);
+        await this.writeString(item.texture2, item.id);
+        await this.writeString(item.extraOptions, item.id);
 
-          const extraBytesObj = item.extraBytes as any
+        const extraBytesObj = item.extraBytes as any;
 
-          if (typeof extraBytesObj=== 'object' &&
-            extraBytesObj?.type === 'Buffer')
-            item.extraBytes = Buffer.from(extraBytesObj?.data)
+        if (typeof extraBytesObj === "object" && extraBytesObj?.type === "Buffer")
+          item.extraBytes = Buffer.from(extraBytesObj?.data);
 
-          if (Buffer.isBuffer(item.extraBytes))
-            for (const byte of item.extraBytes)
-              this.data[this.mempos++] = byte
+        if (Buffer.isBuffer(item.extraBytes))
+          for (const byte of item.extraBytes) this.data[this.mempos++] = byte;
 
-          if (meta.version >= 11) {
-            await this.writeString(item.punchOptions || '', item.id)
+        if (meta.version >= 11) {
+          await this.writeString(item.punchOptions || "", item.id);
 
-            if (meta.version >= 12) {
-              this.data.writeInt32LE(item.flags4, this.mempos)
-              this.mempos += 4;
+          if (meta.version >= 12) {
+            this.data.writeInt32LE(item.flags4, this.mempos);
+            this.mempos += 4;
 
-              const bodyPartObj = item.bodyPart as any
+            const bodyPartObj = item.bodyPart as any;
 
-              if (typeof bodyPartObj === 'object' &&
-                bodyPartObj?.type === 'Buffer')
-                item.bodyPart = Buffer.from(bodyPartObj?.data)
+            if (typeof bodyPartObj === "object" && bodyPartObj?.type === "Buffer")
+              item.bodyPart = Buffer.from(bodyPartObj?.data);
 
-              if (Buffer.isBuffer(item.bodyPart))
-                for (const byte of item.bodyPart)
-                  this.data[this.mempos++] = byte
-            }
+            if (Buffer.isBuffer(item.bodyPart))
+              for (const byte of item.bodyPart) this.data[this.mempos++] = byte;
+          }
 
-            if (meta.version >= 13) {
-              this.data.writeInt32LE(item.flags5, this.mempos)
-              this.mempos += 4;
-            }
+          if (meta.version >= 13) {
+            this.data.writeInt32LE(item.flags5, this.mempos);
+            this.mempos += 4;
+          }
 
-            if (meta.version >= 14) this.mempos += 4;
+          if (meta.version >= 14) this.mempos += 4;
+
+          if (meta.version >= 15) {
+            this.mempos += 25;
+            await this.writeString(item.extraTexture || "", item.id);
           }
         }
-
-        this.mempos = 0 // reset again
-        return resolve(this.data)
       }
-    )
+
+      this.mempos = 0; // reset again
+      return resolve(this.data);
+    });
   }
 
   /**
@@ -287,128 +256,131 @@ class ItemsDat {
    * @returns {Promise<ItemsDatMeta>}
    */
   public decode(): Promise<ItemsDatMeta> {
-    return new Promise(
-      async (resolve) => {
-        const meta: ItemsDatMeta = {
-          items: []
-        }
+    return new Promise(async (resolve) => {
+      const meta: ItemsDatMeta = {
+        items: []
+      };
 
-        meta.version = this.data.readUInt16LE(this.mempos)
-        this.mempos += 2
+      meta.version = this.data.readUInt16LE(this.mempos);
+      this.mempos += 2;
 
-        meta.itemCount = this.data.readUInt32LE(this.mempos);
+      meta.itemCount = this.data.readUInt32LE(this.mempos);
+      this.mempos += 4;
+
+      console.log("Decoding items.dat, version:", meta.version);
+
+      for (let i = 0; i < meta.itemCount; i++) {
+        const item: ItemDefinition = {};
+
+        item.id = this.data.readInt32LE(this.mempos);
         this.mempos += 4;
 
-        console.log('Decoding items.dat, version:', meta.version);
+        item.flags = this.data[this.mempos++];
+        item.flagsCategory = this.data[this.mempos++];
 
-        for (let i = 0; i < meta.itemCount; i++) {
-          const item: ItemDefinition = {};
+        item.type = this.data[this.mempos++];
+        item.materialType = this.data[this.mempos++];
 
-          item.id = this.data.readInt32LE(this.mempos)
-          this.mempos += 4;
+        item.name = await this.readString({ id: item.id, encoded: true });
+        item.texture = await this.readString({ id: item.id });
 
-          item.flags = this.data.readInt16LE(this.mempos)
-          this.mempos += 2;
+        item.textureHash = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.type = this.data[this.mempos++]
-          item.materialType = this.data[this.mempos++]
+        item.visualEffectType = this.data[this.mempos++];
 
-          item.name = await this.readString({ id: item.id, encoded: true })
-          item.texture = await this.readString({ id: item.id })
+        // flags2
+        item.flags2 = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.textureHash = this.data.readInt32LE(this.mempos);
-          this.mempos += 4
+        item.textureX = this.data[this.mempos++];
+        item.textureY = this.data[this.mempos++];
+        item.storageType = this.data[this.mempos++];
+        item.isStripeyWallpaper = this.data[this.mempos++];
+        item.collisionType = this.data[this.mempos++];
+        item.breakHits = this.data[this.mempos++] / 6;
 
-          item.visualEffectType = this.data[this.mempos++]
+        item.resetStateAfter = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          // flags2
-          item.flags2 = this.data.readInt32LE(this.mempos)
-          this.mempos += 4
+        item.bodyPartType = this.data[this.mempos++];
 
-          item.textureX = this.data[this.mempos++]
-          item.textureY = this.data[this.mempos++]
-          item.storageType = this.data[this.mempos++]
-          item.isStripeyWallpaper = this.data[this.mempos++]
-          item.collisionType = this.data[this.mempos++]
-          item.breakHits = this.data[this.mempos++] / 6
+        item.rarity = this.data.readInt16LE(this.mempos);
+        this.mempos += 2;
 
-          item.resetStateAfter = this.data.readInt32LE(this.mempos)
-          this.mempos += 4;
+        item.maxAmount = this.data[this.mempos++];
+        item.extraFile = await this.readString({ id: item.id });
 
-          item.bodyPartType = this.data[this.mempos++];
+        item.extraFileHash = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.rarity = this.data.readInt16LE(this.mempos);
-          this.mempos += 2;
+        item.audioVolume = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.maxAmount = this.data[this.mempos++];
-          item.extraFile = await this.readString({ id: item.id })
+        item.petName = await this.readString({ id: item.id });
+        item.petPrefix = await this.readString({ id: item.id });
+        item.petSuffix = await this.readString({ id: item.id });
+        item.petAbility = await this.readString({ id: item.id });
 
-          item.extraFileHash = this.data.readInt32LE(this.mempos);
-          this.mempos += 4;
+        item.seedBase = this.data[this.mempos++];
+        item.seedOverlay = this.data[this.mempos++];
+        item.treeBase = this.data[this.mempos++];
+        item.treeLeaves = this.data[this.mempos++];
 
-          item.audioVolume = this.data.readInt32LE(this.mempos);
-          this.mempos += 4;
+        item.seedColor = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.petName = await this.readString({ id: item.id });
-          item.petPrefix = await this.readString({ id: item.id });
-          item.petSuffix = await this. readString({ id: item.id });
-          item.petAbility = await this.readString({ id: item.id });
+        item.seedOverlayColor = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.seedBase = this.data[this.mempos++];
-          item.seedOverlay = this.data[this.mempos++];
-          item.treeBase = this.data[this.mempos++];
-          item.treeLeaves = this.data[this.mempos++];
+        item.ingredient = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.seedColor = this.data.readInt32LE(this.mempos);
-          this.mempos += 4;
+        item.growTime = this.data.readInt32LE(this.mempos);
+        this.mempos += 4;
 
-          item.seedOverlayColor = this.data.readInt32LE(this.mempos);
-          this.mempos += 4;
+        item.flags3 = this.data.readInt16LE(this.mempos);
+        this.mempos += 2;
 
-          item.ingredient = this.data.readInt32LE(this.mempos)
-          this.mempos += 4;
+        item.isRayman = this.data.readInt16LE(this.mempos);
+        this.mempos += 2;
 
-          item.growTime = this.data.readInt32LE(this.mempos);
-          this.mempos += 4;
+        item.extraOptions = await this.readString({ id: item.id });
+        item.texture2 = await this.readString({ id: item.id });
+        item.extraOptions = await this.readString({ id: item.id });
 
-          item.flags3 = this.data.readInt16LE(this.mempos);
-          this.mempos += 2;
+        item.extraBytes = this.data.slice(this.mempos, (this.mempos += 80));
 
-          item.isRayman = this.data.readInt16LE(this.mempos);
-          this.mempos += 2;
+        if (meta.version >= 11) {
+          item.punchOptions = await this.readString({ id: item.id });
 
-          item.extraOptions = await this.readString({ id: item.id });
-          item.texture2 = await this.readString({ id: item.id });
-          item.extraOptions = await this.readString({ id: item.id });
+          if (meta.version >= 12) {
+            item.flags4 = this.data.readInt32LE(this.mempos);
+            this.mempos += 4;
 
-          item.extraBytes = this.data.slice(this.mempos, this.mempos += 80);
-
-          if (meta.version >= 11) {
-            item.punchOptions = await this.readString({ id: item.id });
-
-            if (meta.version >= 12) {
-              item.flags4 = this.data.readInt32LE(this.mempos);
-              this.mempos += 4;
-
-              item.bodyPart = this.data.slice(this.mempos, this.mempos += 9);
-            }
-
-            if (meta.version >= 13) {
-              item.flags5 = this.data.readInt32LE(this.mempos);
-              this.mempos += 4;
-            }
-
-            if (meta.version >= 14) this.mempos += 4;
+            item.bodyPart = this.data.slice(this.mempos, (this.mempos += 9));
           }
 
-          meta.items.push(item)
+          if (meta.version >= 13) {
+            item.flags5 = this.data.readInt32LE(this.mempos);
+            this.mempos += 4;
+          }
+
+          if (meta.version >= 14) this.mempos += 4;
+
+          if (meta.version >= 15) {
+            this.mempos += 25;
+            item.extraTexture = await this.readString({ id: item.id });
+          }
         }
 
-        this.mempos = 0
-        return resolve(meta)
+        meta.items.push(item);
       }
-    )
+
+      this.mempos = 0;
+      return resolve(meta);
+    });
   }
 }
 
-export default ItemsDat
+export default ItemsDat;

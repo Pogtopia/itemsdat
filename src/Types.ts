@@ -7,6 +7,7 @@ export interface ItemDefinition {
   id?: number;
 
   flags?: number;
+  flagsCategory?: number;
   type?: number;
   materialType?: number;
 
@@ -65,6 +66,7 @@ export interface ItemDefinition {
   flags4?: number;
   bodyPart?: Buffer;
   flags5?: number;
+  extraTexture?: string;
 }
 
 export interface ItemsDatMeta {
